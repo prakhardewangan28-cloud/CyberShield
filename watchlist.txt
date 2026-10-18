@@ -1,0 +1,6 @@
+# CyberShield suspicious IP watchlist (one IP per line)
+192.0.2.66
+192.0.2.100
+192.0.2.250
+192.0.2.15
+192.0.2.200
