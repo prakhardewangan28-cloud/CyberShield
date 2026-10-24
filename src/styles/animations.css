@@ -1,0 +1,165 @@
+/* Scanline effect for visualizations and radar */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(1000%);
+  }
+}
+
+.scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.7), transparent);
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Subtle circuit grid background pattern */
+.circuit-grid-bg {
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(rgba(0, 229, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px, 64px 64px, 64px 64px;
+}
+
+/* Radar rotation */
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-spinner {
+  animation: radar-sweep 6s linear infinite;
+}
+
+/* Pulse animation for active monitoring threads and live indicators */
+@keyframes pulse-cyan {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(0, 229, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 229, 255, 0);
+  }
+}
+
+.pulse-indicator-cyan {
+  animation: pulse-cyan 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 59, 92, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 92, 0);
+  }
+}
+
+.pulse-indicator-red {
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 217, 150, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(56, 217, 150, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 217, 150, 0);
+  }
+}
+
+.pulse-indicator-green {
+  animation: pulse-green 2.5s infinite;
+}
+
+@keyframes pulse-amber {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 176, 32, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 176, 32, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 176, 32, 0);
+  }
+}
+
+.pulse-indicator-amber {
+  animation: pulse-amber 2s infinite;
+}
+
+/* Shimmer loader for skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #101827 25%, #1c2942 50%, #101827 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* Fade in for page contents */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Network packet flow animation */
+@keyframes packet-dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.flowing-packet-line {
+  stroke-dasharray: 6, 8;
+  animation: packet-dash 1.2s linear infinite;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
