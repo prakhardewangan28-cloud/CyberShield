@@ -378,11 +378,9 @@ frontend/
 
 
 ### Installation
-From the root of the project:
+From the root of the project (there is no `frontend/` subfolder — `package.json` lives in the root):
 
 ```bash
-
-cd frontend
 
 npm install
 
