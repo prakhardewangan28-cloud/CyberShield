@@ -40,7 +40,26 @@ export const auditApi = {
     }
 
     try {
-      const response = await apiClient.get<{ items: AuditLog[]; total: number }>('/api/v1/audit', { params });
+      const response = await apiClient.get<{ items: AuditLog[]; total: number } | AuditLog[]>('/api/v1/audit', { params });
+      if (Array.isArray(response.data)) {
+        let items = response.data;
+        if (params.search) {
+          const query = params.search.toLowerCase();
+          items = items.filter(l => 
+            l.action.toLowerCase().includes(query) ||
+            l.actor.toLowerCase().includes(query) ||
+            l.target_resource.toLowerCase().includes(query) ||
+            l.details.toLowerCase().includes(query)
+          );
+        }
+        if (params.action && params.action !== 'all') {
+          items = items.filter(l => l.action === params.action);
+        }
+        return {
+          items,
+          total: items.length
+        };
+      }
       return response.data;
     } catch (err) {
       console.warn('[CyberShield API] Backend /audit unreachable, falling back to mock dataset:', err);

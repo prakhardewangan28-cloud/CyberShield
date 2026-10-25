@@ -168,7 +168,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div>
               <div style={{ fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span>Live Python Backend Offline (http://127.0.0.1:8000)</span>
+                <span>Live Python Backend Offline (http://127.0.0.1:5000)</span>
                 <span className="badge badge-sev-medium" style={{ fontSize: '0.65rem' }}>Simulation Active</span>
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>

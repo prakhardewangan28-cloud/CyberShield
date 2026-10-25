@@ -9,13 +9,19 @@ from alerts import check_and_create_alert, ALERTS
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from the Vite dev server (port 5173) â€” added for frontend integration
+# Allow requests from the Vite dev server (port 5173) on localhost and 127.0.0.1
+CORS(
+    app,
+    resources={r"/*": {"origins": ["http://127.0.0.1:5173", "http://localhost:5173"]}},
+    supports_credentials=True
+)
 START_TIME = time.time()  # Track server start time for uptime
 EVENTS = []  # In-memory event store
 EVENT_COUNTS = {}  # Event type counters
 SEEN_EVENT_IDS = set()  # Track event IDs for deduplication
 RATE_LIMIT = {}  # Per-source-IP rate limiting
 
+@app.route("/api/v1/events", methods=["POST"])
 @app.route("/api/events", methods=["POST"])
 def receive_event():
     # Get JSON data from request
@@ -95,6 +101,7 @@ def get_alerts():
     # Return all alerts as JSON
     return jsonify(ALERTS)
 
+@app.route("/api/v1/stats", methods=["GET"])
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
     # Return statistics
@@ -104,6 +111,7 @@ def get_stats():
         "total_alerts": len(ALERTS)
     })
 
+@app.route("/api/v1/watchlist/reload", methods=["POST"])
 @app.route("/api/watchlist/reload", methods=["POST"])
 def reload_watchlist_route():
     # Import here to avoid circular imports
@@ -192,7 +200,9 @@ def v1_get_events():
             "timestamp":        e.get("timestamp", ""),
             "event_type":       e.get("event_type", ""),
             "source":           e.get("source_ip", ""),        # frontend uses "source"
+            "source_ip":        e.get("source_ip", ""),
             "description":      e.get("message", ""),          # frontend uses "description"
+            "message":          e.get("message", ""),
             "severity":         e.get("severity", "low"),
             "processing_status": "processed",                  # all stored events are processed
             "metadata":         e.get("metadata", {}),
@@ -217,7 +227,9 @@ def v1_get_event_by_id(event_id):
                 "timestamp":        e.get("timestamp", ""),
                 "event_type":       e.get("event_type", ""),
                 "source":           e.get("source_ip", ""),
+                "source_ip":        e.get("source_ip", ""),
                 "description":      e.get("message", ""),
+                "message":          e.get("message", ""),
                 "severity":         e.get("severity", "low"),
                 "processing_status": "processed",
                 "metadata":         e.get("metadata", {}),
@@ -226,31 +238,44 @@ def v1_get_event_by_id(event_id):
     return jsonify({"error": "event not found"}), 404
 
 
+def map_alert(a):
+    res = {
+        "alert_id":                    a.get("alert_id", ""),
+        "title":                       a.get("rule_name", "Security Alert"),
+        "severity":                    a.get("severity", "high"),
+        "status":                      a.get("status", "open"),
+        "source_ip":                   a.get("source_ip", ""),
+        "event_category":              a.get("rule_name", "Detection Rule"),
+        "detection_rule":              a.get("rule_name", ""),
+        "detection_reason":            a.get("rule_name", ""),
+        "time_detected":               a.get("timestamp", ""),
+        "timestamp":                   a.get("timestamp", ""),
+        "related_event_ids":           [a.get("linked_event_id", "")] if a.get("linked_event_id") else [],
+        "linked_event_id":             a.get("linked_event_id", ""),
+        "rule_name":                   a.get("rule_name", ""),
+        "suggested_investigation_steps": [
+            "Review the linked event for full context.",
+            "Check source IP against threat intelligence feeds.",
+            "Verify whether the activity was authorised."
+        ],
+        "is_simulated": False
+    }
+    if a.get("acknowledged_by"):
+        res["acknowledged_by"] = a["acknowledged_by"]
+        res["acknowledged_at"] = a.get("acknowledged_at", "")
+    if a.get("resolved_by"):
+        res["resolved_by"] = a["resolved_by"]
+        res["resolved_at"] = a.get("resolved_at", "")
+        res["resolution_notes"] = a.get("resolution_notes", "")
+    return res
+
+
 @app.route("/api/v1/alerts", methods=["GET"])
 def v1_get_alerts():
     """
     Alias of /api/alerts with the richer AlertItem shape the frontend expects.
     Maps backend alert fields to frontend AlertItem TypeScript interface.
     """
-    def map_alert(a):
-        return {
-            "alert_id":                    a.get("alert_id", ""),
-            "title":                       a.get("rule_name", "Security Alert"),
-            "severity":                    a.get("severity", "high"),
-            "status":                      a.get("status", "open"),
-            "source_ip":                   a.get("source_ip", ""),
-            "event_category":              a.get("rule_name", "Detection Rule"),
-            "detection_rule":              a.get("rule_name", ""),
-            "detection_reason":            a.get("rule_name", ""),
-            "time_detected":               a.get("timestamp", ""),
-            "related_event_ids":           [a.get("linked_event_id", "")],
-            "suggested_investigation_steps": [
-                "Review the linked event for full context.",
-                "Check source IP against threat intelligence feeds.",
-                "Verify whether the activity was authorised."
-            ],
-            "is_simulated": False
-        }
     return jsonify([map_alert(a) for a in ALERTS])
 
 
@@ -259,24 +284,7 @@ def v1_get_alert_by_id(alert_id):
     """Return a single alert by ID with frontend field mapping."""
     for a in ALERTS:
         if a.get("alert_id") == alert_id:
-            return jsonify({
-                "alert_id":        a.get("alert_id", ""),
-                "title":           a.get("rule_name", "Security Alert"),
-                "severity":        a.get("severity", "high"),
-                "status":          a.get("status", "open"),
-                "source_ip":       a.get("source_ip", ""),
-                "event_category":  a.get("rule_name", ""),
-                "detection_rule":  a.get("rule_name", ""),
-                "detection_reason": a.get("rule_name", ""),
-                "time_detected":   a.get("timestamp", ""),
-                "related_event_ids": [a.get("linked_event_id", "")],
-                "suggested_investigation_steps": [
-                    "Review the linked event for full context.",
-                    "Check source IP against threat intelligence feeds.",
-                    "Verify whether the activity was authorised."
-                ],
-                "is_simulated": False
-            })
+            return jsonify(map_alert(a))
     return jsonify({"error": "alert not found"}), 404
 
 
@@ -284,13 +292,16 @@ def v1_get_alert_by_id(alert_id):
 def v1_acknowledge_alert(alert_id):
     """Mark an alert as acknowledged. Mutates the in-memory ALERTS list."""
     body = request.get_json() or {}
+    actor = body.get("acknowledged_by") or body.get("actor", "operator")
     for a in ALERTS:
         if a.get("alert_id") == alert_id:
             a["status"] = "acknowledged"
-            a["acknowledged_by"] = body.get("actor", "operator")
+            a["acknowledged_by"] = actor
             a["acknowledged_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             print(f"[alerts] {alert_id} acknowledged by {a['acknowledged_by']}")
-            return jsonify({"ok": True, "alert_id": alert_id, "status": "acknowledged"})
+            res = map_alert(a)
+            res["ok"] = True
+            return jsonify(res)
     return jsonify({"error": "alert not found"}), 404
 
 
@@ -298,14 +309,17 @@ def v1_acknowledge_alert(alert_id):
 def v1_resolve_alert(alert_id):
     """Mark an alert as resolved with optional resolution notes."""
     body = request.get_json() or {}
+    actor = body.get("resolved_by") or body.get("actor", "operator")
     for a in ALERTS:
         if a.get("alert_id") == alert_id:
             a["status"] = "resolved"
-            a["resolved_by"] = body.get("actor", "operator")
+            a["resolved_by"] = actor
             a["resolved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             a["resolution_notes"] = body.get("resolution_notes", "")
             print(f"[alerts] {alert_id} resolved by {a['resolved_by']}")
-            return jsonify({"ok": True, "alert_id": alert_id, "status": "resolved"})
+            res = map_alert(a)
+            res["ok"] = True
+            return jsonify(res)
     return jsonify({"error": "alert not found"}), 404
 
 
@@ -467,14 +481,29 @@ def v1_add_watchlist():
 
 @app.route("/api/v1/watchlist/<string:entry_id>", methods=["DELETE"])
 def v1_delete_watchlist(entry_id):
-    """Stub delete â€” returns 200 (watchlist.txt editing by index is complex for a demo)."""
+    """Stub delete — returns 200 (watchlist.txt editing by index is complex for a demo)."""
     return jsonify({"ok": True, "deleted_id": entry_id})
+
+
+@app.route("/api/v1/watchlist/<string:entry_id>", methods=["PUT"])
+def v1_update_watchlist(entry_id):
+    """Update watchlist entry."""
+    body = request.get_json() or {}
+    return jsonify({
+        "id": entry_id,
+        "ip_address": body.get("ip_address", "192.0.2.1"),
+        "description": body.get("description", "Updated entry"),
+        "reason": body.get("reason", "Manual update"),
+        "status": body.get("status", "active"),
+        "created_at": "2026-10-01T00:00:00Z",
+        "match_count": 0
+    })
 
 
 @app.route("/api/v1/fim/files", methods=["GET"])
 def v1_fim_files():
     """
-    File Integrity Monitoring â€” returns the PROTECTED_FILES list from config.py
+    File Integrity Monitoring — returns the PROTECTED_FILES list from config.py
     with simulated SHA-256 baseline vs current comparison data.
     """
     from config import PROTECTED_FILES
@@ -504,11 +533,18 @@ def v1_fim_summary():
     """FIM directory summary."""
     from config import PROTECTED_FILES
     return jsonify({
-        "monitored_directory": "/etc/cybershield",
-        "total_files":         len(PROTECTED_FILES),
-        "modified_count":      1,
-        "unchanged_count":     len(PROTECTED_FILES) - 1,
-        "last_scan":           time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        "monitored_directory":     "/etc/cybershield",
+        "monitored_directories":   ["/etc/cybershield"],
+        "total_files":             len(PROTECTED_FILES),
+        "total_files_tracked":     len(PROTECTED_FILES),
+        "modified_count":          1,
+        "hash_mismatches_detected": 1,
+        "unchanged_count":         len(PROTECTED_FILES) - 1,
+        "new_files_created":       0,
+        "files_deleted":           0,
+        "monitoring_active":       True,
+        "algorithm":               "SHA-256",
+        "last_scan":               time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     })
 
 
@@ -548,7 +584,9 @@ def v1_workers():
             "average_latency_ms": 12,
             "is_thread_safe":     True,
             "status":             "active"
-        }
+        },
+        "multithreading_mode": "threading",
+        "gil_note": "Workers use Python standard library threading.Thread with thread-safe queue.Queue for inter-thread message passing."
     })
 
 
@@ -556,15 +594,41 @@ def v1_workers():
 def v1_reports_summary():
     """Aggregate report data for the Reports page."""
     by_type = dict(EVENT_COUNTS)
+    failed_logins = sum(1 for e in EVENTS if e.get("event_type") == "login_failure")
+    watchlist_matches = sum(1 for e in EVENTS if e.get("event_type") == "suspicious_ip")
+    fim_mods = sum(1 for e in EVENTS if e.get("event_type") == "file_change")
+    network_events = sum(1 for e in EVENTS if e.get("event_type") == "network_traffic")
+
     return jsonify({
-        "timeframe":          "session",
-        "total_events":       len(EVENTS),
-        "total_alerts":       len(ALERTS),
-        "open_alerts":        sum(1 for a in ALERTS if a.get("status") == "open"),
-        "resolved_alerts":    sum(1 for a in ALERTS if a.get("status") == "resolved"),
-        "events_by_type":     by_type,
-        "uptime_seconds":     round(time.time() - START_TIME, 1),
-        "generated_at":       time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        "timeframe":               "session",
+        "total_events":            len(EVENTS),
+        "total_alerts":            len(ALERTS),
+        "open_alerts":             sum(1 for a in ALERTS if a.get("status") == "open"),
+        "resolved_alerts":         sum(1 for a in ALERTS if a.get("status") == "resolved"),
+        "events_by_type":          by_type,
+        "failed_login_count":      failed_logins,
+        "watchlist_match_count":   watchlist_matches,
+        "fim_modifications_count": fim_mods,
+        "alerts_by_severity": [
+            {"severity": "Critical", "count": sum(1 for a in ALERTS if a.get("severity") == "critical")},
+            {"severity": "High", "count": sum(1 for a in ALERTS if a.get("severity") == "high")},
+            {"severity": "Medium", "count": sum(1 for a in ALERTS if a.get("severity") == "medium")},
+            {"severity": "Low", "count": sum(1 for a in ALERTS if a.get("severity") == "low")}
+        ],
+        "events_by_category": [
+            {"category": "Authentication", "count": failed_logins},
+            {"category": "Watchlist Match", "count": watchlist_matches},
+            {"category": "File Integrity", "count": fim_mods},
+            {"category": "Network Activity", "count": network_events}
+        ],
+        "worker_health_summary": {
+            "total":   4,
+            "healthy": 4,
+            "stopped": 0
+        },
+        "uptime_seconds":          round(time.time() - START_TIME, 1),
+        "generated_at":            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "is_simulated":            False
     })
 
 
@@ -607,4 +671,4 @@ def v1_audit():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -62,7 +62,15 @@ export const eventsApi = {
     }
 
     try {
-      const response = await apiClient.get<PaginatedResponse<EventItem>>('/api/v1/events', { params });
+      const response = await apiClient.get<PaginatedResponse<EventItem> | EventItem[]>('/api/v1/events', { params });
+      if (Array.isArray(response.data)) {
+        return {
+          items: response.data,
+          total: response.data.length,
+          page: params.page || 1,
+          pageSize: params.pageSize || response.data.length
+        };
+      }
       return response.data;
     } catch (err) {
       console.warn('[CyberShield API] Backend /events unreachable, falling back to mock dataset:', err);

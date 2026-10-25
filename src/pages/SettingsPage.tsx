@@ -53,7 +53,7 @@ export const SettingsPage: React.FC = () => {
       } else {
         setPingResult({ 
           ok: false, 
-          message: `Cannot connect to ${inputUrl}. Ensure your Python backend server is running (e.g. uvicorn app:app --port 8000).` 
+          message: `Cannot connect to ${inputUrl}. Ensure your Python backend server is running (e.g. python receiver.py on port 5000).` 
         });
         addToast('warning', 'Backend Offline', 'Could not reach server. Demo mode remains available for presentation.');
       }
@@ -117,7 +117,7 @@ export const SettingsPage: React.FC = () => {
                   className="input-field"
                   value={inputUrl}
                   onChange={(e) => setInputUrl(e.target.value)}
-                  placeholder="http://127.0.0.1:8000"
+                  placeholder="http://127.0.0.1:5000"
                 />
                 <button
                   onClick={handleTestConnection}

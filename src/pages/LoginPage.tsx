@@ -140,7 +140,7 @@ export const LoginPage: React.FC = () => {
               className={isConnected ? 'pulse-indicator-green' : 'pulse-indicator-amber'}
             />
             <span style={{ color: isConnected ? 'var(--sev-low)' : 'var(--sev-medium)', fontWeight: 500 }}>
-              {isConnected ? 'Backend: Online (Port 8000)' : 'Simulation Mode Active (Safe Demo Access)'}
+              {isConnected ? 'Backend: Online (Port 5000)' : 'Simulation Mode Active (Safe Demo Access)'}
             </span>
           </div>
         </div>

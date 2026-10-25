@@ -53,7 +53,32 @@ export const alertsApi = {
     }
 
     try {
-      const response = await apiClient.get<AlertListResponse>('/api/v1/alerts', { params });
+      const response = await apiClient.get<AlertListResponse | AlertItem[]>('/api/v1/alerts', { params });
+      if (Array.isArray(response.data)) {
+        let items = response.data;
+        if (params.search) {
+          const query = params.search.toLowerCase();
+          items = items.filter(a => 
+            a.title.toLowerCase().includes(query) ||
+            a.alert_id.toLowerCase().includes(query) ||
+            (a.source_ip && a.source_ip.toLowerCase().includes(query)) ||
+            a.detection_rule.toLowerCase().includes(query)
+          );
+        }
+        if (params.severity && params.severity !== 'all') {
+          items = items.filter(a => a.severity === params.severity);
+        }
+        if (params.status && params.status !== 'all') {
+          items = items.filter(a => a.status === params.status);
+        }
+        if (params.category && params.category !== 'all') {
+          items = items.filter(a => a.event_category === params.category);
+        }
+        return {
+          items,
+          total: items.length
+        };
+      }
       return response.data;
     } catch (err) {
       console.warn('[CyberShield API] Backend /alerts unreachable, falling back to mock dataset:', err);

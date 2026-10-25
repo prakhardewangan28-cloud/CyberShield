@@ -22,8 +22,11 @@ export interface EventItem {
   event_id: string;
   timestamp: string;
   event_type: 
+    | 'network_traffic'
     | 'login_failure' 
     | 'login_success' 
+    | 'suspicious_ip'
+    | 'file_change'
     | 'file_created' 
     | 'file_modified' 
     | 'file_deleted' 
@@ -33,8 +36,10 @@ export interface EventItem {
     | 'dns_query' 
     | 'worker_heartbeat';
   source: string;
+  source_ip?: string;
   destination?: string;
   description: string;
+  message?: string;
   severity: Severity;
   processing_status: ProcessingStatus;
   matched_rule?: string;
@@ -54,6 +59,9 @@ export interface AlertItem {
   detection_rule: string;
   detection_reason: string;
   time_detected: string;
+  timestamp?: string;
+  linked_event_id?: string;
+  rule_name?: string;
   time_window_seconds?: number;
   observed_failures?: number;
   suggested_investigation_steps: string[];
@@ -63,6 +71,7 @@ export interface AlertItem {
   resolved_by?: string;
   resolved_at?: string;
   resolution_notes?: string;
+  ok?: boolean;
   is_simulated: boolean;
 }
 

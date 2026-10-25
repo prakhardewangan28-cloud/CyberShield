@@ -45,7 +45,7 @@ def main(run_seconds=RUN_SECONDS):
         
         # Fetch and display run summary
         try:
-            stats_url = SERVER_URL.replace("/api/events", "/api/stats")
+            stats_url = SERVER_URL.replace("/events", "/stats")
             r = requests.get(stats_url, timeout=5)
             stats = r.json()
             elapsed = time.time() - start_time

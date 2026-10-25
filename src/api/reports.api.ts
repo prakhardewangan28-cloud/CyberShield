@@ -47,10 +47,33 @@ export const reportsApi = {
     }
 
     try {
-      const response = await apiClient.get<ReportData>('/api/v1/reports/summary', {
+      const response = await apiClient.get<any>('/api/v1/reports/summary', {
         params: { range }
       });
-      return response.data;
+      const data = response.data;
+      return {
+        timeframe: data.timeframe || (range === '24h' ? 'Last 24 Hours' : range === '7d' ? 'Last 7 Days' : 'Last 30 Days'),
+        total_events: data.total_events ?? 0,
+        total_alerts: data.total_alerts ?? 0,
+        failed_login_count: data.failed_login_count ?? 0,
+        watchlist_match_count: data.watchlist_match_count ?? 0,
+        fim_modifications_count: data.fim_modifications_count ?? 0,
+        alerts_by_severity: data.alerts_by_severity || [
+          { severity: 'Critical', count: 0 },
+          { severity: 'High', count: 0 },
+          { severity: 'Medium', count: 0 },
+          { severity: 'Low', count: 0 }
+        ],
+        events_by_category: data.events_by_category || [
+          { category: 'Authentication', count: 0 },
+          { category: 'Watchlist Match', count: 0 },
+          { category: 'File Integrity', count: 0 },
+          { category: 'Network Activity', count: 0 }
+        ],
+        worker_health_summary: data.worker_health_summary || { total: 4, healthy: 4, stopped: 0 },
+        generated_at: data.generated_at || new Date().toISOString().replace('T', ' ').substring(0, 19),
+        is_simulated: data.is_simulated ?? false
+      };
     } catch (err) {
       console.warn('[CyberShield API] Backend /reports unreachable, falling back to mock dataset:', err);
       return reportsApi.getReport(range, true);

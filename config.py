@@ -1,7 +1,7 @@
 # Configuration for CyberShield simulator
 
 # HTTP receiver endpoint
-SERVER_URL = "http://127.0.0.1:5000/api/events"
+SERVER_URL = "http://127.0.0.1:5000/api/v1/events"
 
 # Simulation runtime in seconds
 RUN_SECONDS = 30

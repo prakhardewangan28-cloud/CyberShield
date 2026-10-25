@@ -414,3 +414,37 @@ class TestV1Routes:
         assert len(logs) >= 1
         assert logs[0]["action"] == "RESOLVE_ALERT"
         assert logs[0]["actor"] == "tester"
+
+    def test_v1_post_event(self, client):
+        r = client.post("/api/v1/events", json=make_event("e_v1_test"))
+        assert r.status_code == 201
+        assert r.get_json()["ok"] is True
+
+    def test_v1_stats(self, client):
+        client.post("/api/v1/events", json=make_event("e_stats_1"))
+        r = client.get("/api/v1/stats")
+        assert r.status_code == 200
+        data = r.get_json()
+        assert data["total_events"] == 1
+        assert "total_alerts" in data
+        assert "by_type" in data
+
+    def test_v1_watchlist_update(self, client):
+        r = client.put("/api/v1/watchlist/wl_001", json={"ip_address": "192.0.2.99", "reason": "Updated"})
+        assert r.status_code == 200
+        assert r.get_json()["id"] == "wl_001"
+
+    def test_cors_headers_127_0_0_1_5173(self, client):
+        r = client.get("/api/v1/health", headers={"Origin": "http://127.0.0.1:5173"})
+        assert r.status_code == 200
+        assert r.headers.get("Access-Control-Allow-Origin") == "http://127.0.0.1:5173"
+
+    def test_cors_headers_localhost_5173(self, client):
+        r = client.get("/api/v1/health", headers={"Origin": "http://localhost:5173"})
+        assert r.status_code == 200
+        assert r.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
+
+    def test_cors_headers_disallowed_origin(self, client):
+        r = client.get("/api/v1/health", headers={"Origin": "http://evil.com"})
+        assert r.status_code == 200
+        assert r.headers.get("Access-Control-Allow-Origin") is None

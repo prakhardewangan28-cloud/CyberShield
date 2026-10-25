@@ -216,7 +216,7 @@ Coordinate with backend owner before editing receiver.py.
 ## Example fetch snippet
 
 ```javascript
-fetch('http://127.0.0.1:5000/api/events')
+fetch('http://127.0.0.1:5000/api/v1/events')
   .then(r => r.json())
   .then(events => console.log(events))
   .catch(err => console.error('fetch failed:', err));

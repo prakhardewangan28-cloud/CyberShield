@@ -28,7 +28,13 @@ export const ApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [backendUrl, setBackendUrlState] = useState<string>(() => {
-    return localStorage.getItem('cybershield_backend_url') || DEFAULT_API_BASE_URL;
+    const saved = localStorage.getItem('cybershield_backend_url');
+    if (saved && saved.includes(':8000')) {
+      const updated = saved.replace(':8000', ':5000');
+      localStorage.setItem('cybershield_backend_url', updated);
+      return updated;
+    }
+    return saved || DEFAULT_API_BASE_URL;
   });
 
   const [isConnected, setIsConnected] = useState<boolean>(false);
